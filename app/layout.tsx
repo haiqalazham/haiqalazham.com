@@ -12,7 +12,7 @@ export const metadata: Metadata = {
   metadataBase: new URL(baseUrl),
   title: {
     default: 'Haiqal Azham',
-    template: '%s | Next.js Portfolio Starter',
+    template: '%s | Haiqal Azham',
   },
   description: 'This is my portfolio.',
   openGraph: {
@@ -52,9 +52,13 @@ export default function RootLayout({
         GeistMono.variable
       )}
     >
-      <body className="antialiased">
-        <main className="flex items-center justify-center h-screen">
+      <body className="antialiased max-w-xl mx-4 mt-8 lg:mx-auto">
+        <main className="flex-auto min-w-0 mt-6 flex flex-col px-2 md:px-0">
+          <Navbar />
           {children}
+          <Footer />
+          <Analytics />
+          <SpeedInsights />
         </main>
       </body>
     </html>
