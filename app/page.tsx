@@ -3,18 +3,14 @@ import { BlogPosts } from 'app/components/posts'
 export default function Page() {
   return (
     <section>
-      <h1 className="mb-8 text-2xl font-semibold tracking-tighter">
-        Haiqal Azham
-      </h1>
-      <p className="mb-4">
-        {`Hi, I’m Haiqal Akmal. I’m a technology enthusiast and an avid photographer. I specialize in street and landscape photography.`}
-      </p>
-      <p className="mb-4">
-        {`I’m currently studying Mechanical Engineering at the University of Michigan. Other hobbies include programming, gaming and finding ways to accelerate the adoption of renewable energy.`}
-      </p>
+      <p className="mb-4">Hello! I'm Haiqal, a technology enthusiast and an avid photographer. I'm interested in human-computer interaction, walkable cities and tools for thought.</p>
+      <p>I'm currently working on implementing SAP S4/HANA in PETRONAS. In my free time, I like to read books, tend my digital garden, and watch movies.</p>
+      {/*
       <div className="my-8">
+        <h2 className="font-semibold text-xl mb-8 tracking-tighter">My Writings</h2>
         <BlogPosts />
       </div>
+      */}
     </section>
   )
 }
