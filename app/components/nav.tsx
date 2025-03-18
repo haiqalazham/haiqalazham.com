@@ -2,13 +2,13 @@ import Link from 'next/link'
 
 const navItems = {
   '/blog': {
-    name: 'blog',
+    name: '🪶 blog',
   },
   '/gallery': {
-    name: 'gallery',
+    name: '🏞️ gallery',
   },
   '/notes': {
-    name: 'notes',
+    name: '🌿 notes',
   },
 }
 
