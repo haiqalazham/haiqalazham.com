@@ -19,7 +19,7 @@ export default function PhotoGallery() {
       <h1 className="font-semibold text-2xl mb-8 tracking-tighter">My Gallery</h1>
       <div className="grid gap-4 grid-cols-[repeat(auto-fill,minmax(200px,1fr))]">
         {images.map((imagePath, index) => (
-          <div key={index} className="rounded-lg shadow-md">
+          <div key={index} className="rounded-lg shadow-md transition-transform transform hover:scale-105 hover:shadow-lg">
             <Image
               src={imagePath}
               alt={`Gallery image ${index + 1}`}
