@@ -12,7 +12,7 @@ export default function Page() {
         movies.
       </p>
       <p>
-        Check out what I'm doing{" "}
+        Check out what I'm up to{" "}
         <Link
           href="/now"
           className="text-blue-500 underline hover:text-blue-700"
