@@ -1,0 +1,141 @@
+---
+import { getCollection } from "astro:content";
+import { Image } from "astro:assets";
+import exifr from "exifr";
+import { join } from "node:path";
+import BaseLayout from "../layouts/BaseLayout.astro";
+import { getExcerpt, sortNullableDatesDesc, formatDateShort, formatDateMonthYear } from "../utils/content";
+
+const posts = (await getCollection("blog"))
+    .sort((a, b) => sortNullableDatesDesc(a.data.date, b.data.date))
+    .slice(0, 3);
+
+const notes = (await getCollection("notes"))
+    .sort((a, b) => sortNullableDatesDesc(a.data.updated, b.data.updated))
+    .slice(0, 3);
+
+const modules = import.meta.glob<{ default: ImageMetadata }>(
+    "../assets/gallery/*.{jpg,jpeg,JPG,JPEG,png,PNG,webp,WEBP}",
+    { eager: true },
+);
+const recentPhotos = (
+    await Promise.all(
+        Object.entries(modules).map(async ([globPath, m]) => {
+            const filename = globPath.split("/").at(-1)!;
+            const filePath = join(
+                process.cwd(),
+                "src/assets/gallery",
+                filename,
+            );
+            const exif = await exifr
+                .parse(filePath, { pick: ["DateTimeOriginal"] })
+                .catch(() => null);
+            return {
+                src: m.default,
+                date:
+                    exif?.DateTimeOriginal instanceof Date
+                        ? exif.DateTimeOriginal
+                        : null,
+            };
+        }),
+    )
+)
+    .sort((a, b) => sortNullableDatesDesc(a.date, b.date))
+    .slice(0, 3);
+
+---
+
+<BaseLayout>
+    <div class="landing-bio">
+        <p>
+            Hi, I'm Haiqal. I'm currently working on SAP S/4HANA business
+            transformation, specifically on plant maintenance. I spend a lot of
+            time thinking about what it means to use technology efficiently and
+            intentionally. I'm interested in software, engineering, photography
+            and sustainability.
+        </p>
+        <p>
+            I'm currently reading <a
+                href="https://www.goodreads.com/en/book/show/121105727-a-brief-history-of-the-female-body"
+                >A Brief History of the Female Body</a
+            >, playing <a
+                href="https://backloggd.com/games/god-of-war-ragnarok/"
+                >God of War Ragnarök</a
+            > and watching <a
+                href="https://letterboxd.com/film/the-sheep-detectives/"
+                >The Sheep Detectives</a
+            >.
+        </p>
+    </div>
+
+    <section class="home-section">
+        <div class="home-section-header">
+            <span>recent posts</span>
+            <a href="/blog">all posts →</a>
+        </div>
+        <ul class="post-list">
+            {
+                posts.map((post) => (
+                    <li>
+                        <a href={`/blog/${post.id}`}>{post.data.title}</a>
+                        <span class="post-date">
+                            {formatDateShort(post.data.date)}
+                        </span>
+                    </li>
+                ))
+            }
+        </ul>
+    </section>
+
+    {
+        recentPhotos.length > 0 && (
+            <section class="home-section">
+                <div class="home-section-header">
+                    <span>recent photos</span>
+                    <a href="/gallery">gallery →</a>
+                </div>
+                <div class="home-photos">
+                    {recentPhotos.map(({ src }, i) => (
+                        <a
+                            href="/gallery"
+                            aria-label={`View photo ${i + 1} in gallery`}
+                            style={`flex: ${src.width / src.height} 1 0`}
+                        >
+                            <Image
+                                src={src}
+                                alt=""
+                                width={600}
+                                quality={80}
+                                loading="lazy"
+                            />
+                        </a>
+                    ))}
+                </div>
+            </section>
+        )
+    }
+
+    <section class="home-section">
+        <div class="home-section-header">
+            <span>recent notes</span>
+            <a href="/notes">all notes →</a>
+        </div>
+        <div class="notes-grid">
+            {
+                notes.map((note) => (
+                    <a href={`/notes/${note.id}`} class="note-card">
+                        <span class="note-card-title">{note.data.title}</span>
+                        <span class="note-card-excerpt">
+                            {getExcerpt(note.body ?? "", 120)}
+                        </span>
+                        {note.data.updated && (
+                            <span class="note-card-date">
+                                {formatDateMonthYear(note.data.updated)}
+                            </span>
+                        )}
+                    </a>
+                ))
+            }
+        </div>
+    </section>
+</BaseLayout>

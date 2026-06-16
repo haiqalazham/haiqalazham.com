@@ -1,0 +1,63 @@
+---
+import "../styles/global.css";
+
+interface Props {
+  title?: string;
+  description?: string;
+  ogType?: "website" | "article";
+}
+
+const { title, description, ogType = "website" } = Astro.props;
+const siteTitle = "Haiqal";
+const pageTitle = title ? `${title} — ${siteTitle}` : siteTitle;
+
+const nav = [
+  { href: "/blog", label: "blog" },
+  { href: "/gallery", label: "gallery" },
+  { href: "/notes", label: "notes" },
+];
+
+const currentPath = Astro.url.pathname;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{pageTitle}</title>
+    {description && <meta name="description" content={description} />}
+    <meta property="og:title" content={pageTitle} />
+    {description && <meta property="og:description" content={description} />}
+    <meta property="og:type" content={ogType} />
+    <meta property="og:site_name" content={siteTitle} />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content={pageTitle} />
+    {description && <meta name="twitter:description" content={description} />}
+    <link rel="alternate" type="application/rss+xml" title={siteTitle} href="/rss.xml" />
+    <link rel="icon" type="image/png" sizes="512x512" href="/favicon.png" />
+    <link rel="apple-touch-icon" href="/favicon.png" />
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="inner">
+        <a href="/" class="home-link">{siteTitle}</a>
+        <nav>
+          {nav.map(({ href, label }) => (
+            <a href={href} aria-current={currentPath.startsWith(href) ? "page" : undefined}>
+              {label}
+            </a>
+          ))}
+        </nav>
+      </div>
+    </header>
+
+    <main>
+      <slot />
+    </main>
+
+    <footer class="site-footer">
+      <span>&copy; {new Date().getFullYear()} Haiqal</span>
+    </footer>
+  </body>
+</html>

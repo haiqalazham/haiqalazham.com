@@ -1,0 +1,30 @@
+---
+import { getCollection } from "astro:content";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import { getExcerpt, sortNullableDatesDesc, formatDateMonthYear } from "../../utils/content";
+
+const notes = (await getCollection("notes")).sort((a, b) =>
+    sortNullableDatesDesc(a.data.updated, b.data.updated),
+);
+---
+
+<BaseLayout title="Notes">
+    <h1 class="page-title">notes</h1>
+    <div class="notes-grid">
+        {
+            notes.map((note) => (
+                <a href={`/notes/${note.id}`} class="note-card">
+                    <span class="note-card-title">{note.data.title}</span>
+                    <span class="note-card-excerpt">
+                        {getExcerpt(note.body ?? "")}
+                    </span>
+                    {note.data.updated && (
+                        <span class="note-card-date">
+                            {formatDateMonthYear(note.data.updated)}
+                        </span>
+                    )}
+                </a>
+            ))
+        }
+    </div>
+</BaseLayout>

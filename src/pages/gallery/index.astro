@@ -1,0 +1,186 @@
+---
+import { Image, getImage } from "astro:assets";
+import exifr from "exifr";
+import { join } from "node:path";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import { sortNullableDatesDesc } from "../../utils/content";
+
+const modules = import.meta.glob<{ default: ImageMetadata }>(
+    "../../assets/gallery/*.{jpg,jpeg,JPG,JPEG,png,PNG,webp,WEBP}",
+    { eager: true },
+);
+
+function formatShutter(t: number | undefined): string | null {
+    if (!t) return null;
+    return t >= 1 ? `${t}s` : `1/${Math.round(1 / t)}s`;
+}
+
+const images = await Promise.all(
+    Object.entries(modules).map(async ([globPath, m]) => {
+        const filename = globPath.split("/").at(-1)!;
+        const filePath = join(process.cwd(), "src/assets/gallery", filename);
+
+        const exif = await exifr
+            .parse(filePath, {
+                pick: ["ISO", "ExposureTime", "FNumber", "DateTimeOriginal"],
+            })
+            .catch(() => null);
+
+        const large = await getImage({
+            src: m.default,
+            width: 1600,
+            quality: 90,
+        });
+
+        const parts = [
+            exif?.ISO ? `ISO ${exif.ISO}` : null,
+            formatShutter(exif?.ExposureTime),
+            exif?.FNumber ? `f/${exif.FNumber}` : null,
+        ]
+            .filter(Boolean)
+            .join(" · ");
+
+        return {
+            thumb: m.default,
+            lightboxSrc: large.src,
+            exif: parts || null,
+            date:
+                exif?.DateTimeOriginal instanceof Date
+                    ? exif.DateTimeOriginal
+                    : null,
+        };
+    }),
+);
+
+images.sort((a, b) => sortNullableDatesDesc(a.date, b.date));
+
+const byYear = new Map<number, typeof images>();
+for (const img of images) {
+    const year = img.date?.getFullYear() ?? 0;
+    if (!byYear.has(year)) byYear.set(year, []);
+    byYear.get(year)!.push(img);
+}
+const years = [...byYear.entries()].sort((a, b) => b[0] - a[0]);
+---
+
+<BaseLayout title="Gallery">
+    <h1 class="page-title">gallery</h1>
+
+    {
+        years.map(([year, imgs]) => (
+            <section class="gallery-year">
+                <h2 class="gallery-year-heading">{year || "Undated"}</h2>
+                <div class="gallery-masonry">
+                    {imgs.map(({ thumb, lightboxSrc, exif }, i) => (
+                        <button
+                            class="gallery-item"
+                            data-src={lightboxSrc}
+                            aria-label={`Open image ${i + 1}`}
+                        >
+                            <Image
+                                src={thumb}
+                                alt=""
+                                width={600}
+                                quality={80}
+                                loading="lazy"
+                            />
+                            {exif && <span class="gallery-exif">{exif}</span>}
+                        </button>
+                    ))}
+                </div>
+            </section>
+        ))
+    }
+
+    <div class="lightbox" id="lightbox" aria-modal="true" role="dialog">
+        <img id="lightbox-img" src="" alt="" />
+    </div>
+</BaseLayout>
+
+<script>
+    function layoutMasonry(container: HTMLElement) {
+        const items = Array.from(
+            container.querySelectorAll<HTMLElement>(".gallery-item"),
+        );
+        if (!items.length) return;
+
+        items.forEach((item) => {
+            item.style.position = "";
+            item.style.left = "";
+            item.style.top = "";
+            item.style.width = "";
+        });
+        container.style.height = "";
+
+        const gap = 12; // 0.75rem
+        const containerWidth = container.offsetWidth;
+
+        let numCols = 3;
+        if (containerWidth < 640) numCols = 2;
+        if (containerWidth < 480) numCols = 1;
+
+        const colWidth = (containerWidth - gap * (numCols - 1)) / numCols;
+
+        items.forEach((item) => {
+            item.style.width = `${colWidth}px`;
+        });
+
+        const heights = items.map((item) => item.offsetHeight);
+
+        const colHeights = new Array(numCols).fill(0);
+        items.forEach((item, i) => {
+            const col = colHeights.indexOf(Math.min(...colHeights));
+            item.style.position = "absolute";
+            item.style.left = `${col * (colWidth + gap)}px`;
+            item.style.top = `${colHeights[col]}px`;
+            colHeights[col] += heights[i] + gap;
+        });
+
+        container.style.height = `${Math.max(...colHeights) - gap}px`;
+    }
+
+    function layoutAll() {
+        document
+            .querySelectorAll<HTMLElement>(".gallery-masonry")
+            .forEach(layoutMasonry);
+    }
+
+    window.addEventListener("load", layoutAll);
+
+    let resizeTimer: ReturnType<typeof setTimeout>;
+    window.addEventListener("resize", () => {
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(layoutAll, 100);
+    });
+
+    const lightbox = document.getElementById("lightbox")!;
+    const lightboxImg = document.getElementById(
+        "lightbox-img",
+    ) as HTMLImageElement;
+
+    document
+        .querySelectorAll<HTMLButtonElement>(".gallery-item")
+        .forEach((btn) => {
+            btn.addEventListener("click", () => {
+                lightboxImg.src = btn.dataset.src!;
+                lightbox.classList.add("open");
+                document.body.style.overflow = "hidden";
+            });
+        });
+
+    lightbox.addEventListener("click", (e) => {
+        if (e.target !== lightboxImg) {
+            closeLightbox();
+        }
+    });
+
+    document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape") closeLightbox();
+    });
+
+    function closeLightbox() {
+        lightbox.classList.remove("open");
+        document.body.style.overflow = "";
+        lightboxImg.src = "";
+    }
+</script>
